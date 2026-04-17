@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -9,25 +8,28 @@ app.use(express.json());
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const masterChatId = process.env.TELEGRAM_CHAT_ID;
 
-// ПРЕМИУМ ОТПРАВКА (С ПОДДЕРЖКОЙ КНОПОК И ОЖИДАНИЕМ)
-function sendMsg(cid, text, markup = null) {
-    return new Promise((resolve, reject) => {
-        const data = JSON.stringify({
-            chat_id: cid, text, parse_mode: 'Markdown', reply_markup: markup
+// САМАЯ СТАБИЛЬНАЯ ОТПРАВКА ЧЕРЕЗ ГЛОБАЛЬНЫЙ FETCH
+async function sendMsg(cid, text, markup = null) {
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: cid,
+                text: text,
+                parse_mode: 'Markdown',
+                reply_markup: markup
+            })
         });
-        const options = {
-            hostname: 'api.telegram.org', port: 443,
-            path: `/bot${token}/sendMessage`, method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
-        };
-        const req = https.request(options, (res) => {
-            res.on('data', () => {}); res.on('end', () => resolve());
-        });
-        req.on('error', (e) => reject(e)); req.write(data); req.end();
-    });
+        if (!response.ok) {
+            console.error('Telegram API Error:', await response.text());
+        }
+    } catch (e) {
+        console.error('Fetch Fatal Error:', e);
+    }
 }
 
-// 1. ПРЕМИУМ УВЕДОМЛЕНИЯ О ЗАЯВКАХ
+// 1. КОНТАКТНАЯ ФОРМА
 app.post('/api/contact', async (req, res) => {
     try {
         const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -39,15 +41,14 @@ app.post('/api/contact', async (req, res) => {
         const card = `💎 *НОВАЯ ЗАЯВКА [ID: ${id}]*\n` +
                      `━━━━━━━━━━━━━━━━━━\n` +
                      `👤 *Клиент:* ${name}\n` +
-                     `📞 *Связь:* [${phone}](tel:${phone})\n` +
-                     `📍 *Локация:* ${zipcode}\n` +
+                     `📞 *Связь:* ${phone}\n` +
+                     `📍 *Zip:* ${zipcode}\n` +
                      `━━━━━━━━━━━━━━━━━━\n` +
                      `📝 *Запрос:* _${message || 'Без комментария'}_`;
 
         await sendMsg(masterChatId, card, {
             inline_keyboard: [
-                [{ text: '✅ Выполнено', callback_data: `done_${id}` }, { text: '📒 Детали', callback_data: `info_${id}` }],
-                [{ text: '💰 Цена', callback_data: `price_${id}` }, { text: '📍 На карту', callback_data: `map_${id}` }]
+                [{ text: '✅ Выполнено', callback_data: `done_${id}` }, { text: '📒 Детали', callback_data: `info_${id}` }]
             ]
         });
         
@@ -55,64 +56,33 @@ app.post('/api/contact', async (req, res) => {
     } catch (e) { res.status(500).send(e.message); }
 });
 
-// 2. ИНТЕРФЕЙС CRM (БОТ)
+// 2. БОТ
 app.post('/api/bot', async (req, res) => {
     try {
         const update = req.body;
         if (!update) return res.status(200).send('ok');
         const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-        // ОБРАБОТКА КНОПОК
         if (update.callback_query) {
             const { data, message } = update.callback_query;
             const cid = message.chat.id;
             const lid = data.split('_')[1];
-
             if (data.startsWith('done_')) {
                 await db.from('leads').update({ status: 'completed' }).eq('id', lid);
-                await sendMsg(cid, `✨ *Заказ [${lid}] успешно завершен!*`);
-            } else if (data.startsWith('info_')) {
-                const { data: l } = await db.from('leads').select('*').eq('id', lid).single();
-                const detail = `📑 *КАРТОЧКА ЗАКАЗА [${lid}]*\n` +
-                               `━━━━━━━━━━━━━━━━━━\n` +
-                               `👤 ФИО: ${l.name}\n` +
-                               `📞 Тел: ${l.phone}\n` +
-                               `💰 Чек: *$${l.price || 0}*\n` +
-                               `📅 Дата: ${new Date(l.timestamp).toLocaleDateString()}\n` +
-                               `━━━━━━━━━━━━━━━━━━\n` +
-                               `📋 Инфо: _${l.info || 'нет заметок'}_`;
-                await sendMsg(cid, detail);
-            } else if (data.startsWith('map_')) {
-                const { data: l } = await db.from('leads').select('zipcode').eq('id', lid).single();
-                await sendMsg(cid, `📍 [Проложить маршрут до ${l.zipcode}](https://www.google.com/maps/search/?api=1&query=${l.zipcode}+Texas)`);
+                await sendMsg(cid, `✅ *Заказ [${lid}] завершен!*`);
             }
             return res.status(200).send('ok');
         }
 
-        // ОБРАБОТКА КОМАНД
         if (update.message && update.message.text) {
             const cid = update.message.chat.id;
             const text = update.message.text;
-            const args = text.split(' ');
-
-            if (text === '/start' || text === '/help') {
-                const menu = `🏛 *LONE STAR CRM PRO*\n` +
-                             `━━━━━━━━━━━━━━━━━━\n` +
-                             `📋 /list — Список заявок\n` +
-                             `💵 /income — Мои финансы\n` +
-                             `📊 /stats — Статистика\n` +
-                             `━━━━━━━━━━━━━━━━━━\n` +
-                             `🛠 _Нажмите на команду выше_`;
-                await sendMsg(cid, menu);
-            } else if (text === '/list') {
+            if (text === '/start' || text === '/list') {
                 const { data } = await db.from('leads').select('*').order('timestamp', { ascending: false }).limit(10);
-                let list = `📋 *ПОСЛЕДНИЕ 10 ЗАЯВОК*\n` +
-                           `━━━━━━━━━━━━━━━━━━\n`;
-                data.forEach(l => {
-                    const icon = l.status === 'completed' ? '✅' : '⏳';
-                    list += `${icon} *[${l.id}]* ${l.name} — *$${l.price || 0}*\n`;
-                });
-                await sendMsg(cid, list);
+                let r = "📋 *СПИСОК ЗАЯВОК*\n━━━━━━━━━━━━━━━━━━\n";
+                if (!data || data.length === 0) r += "_Пока пусто_";
+                else data.forEach(l => { r += `${l.status==='completed'?'✅':'⏳'} *[${l.id}]* ${l.name}\n`; });
+                await sendMsg(cid, r);
             }
         }
     } catch (err) { console.error(err); }
