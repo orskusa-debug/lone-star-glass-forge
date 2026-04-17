@@ -43,10 +43,30 @@ module.exports = async (req, res) => {
             if (error) console.error('Supabase Save Error:', error);
         }
 
-        // 2. Отправляем в Telegram
+        // 2. Отправляем в Telegram с кнопками
         const text = `🔥 *НОВАЯ ЗАЯВКА [ID: ${leadId}]*\n\n👤 *Имя:* ${name}\n📞 *Телефон:* ${phone}\n📍 *Zip:* ${zipcode}\n📝 *Сообщение:* ${message}`;
         
-        await bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: '💰 Уст. цену', callback_data: `price_${leadId}` },
+                            { text: '✅ Готово', callback_data: `complete_${leadId}` }
+                        ],
+                        [
+                            { text: '📒 Заметка', callback_data: `note_${leadId}` },
+                            { text: '📋 Инфо', callback_data: `info_${leadId}` }
+                        ]
+                    ]
+                }
+            })
+        });
         
         return res.status(200).json({ success: true, id: leadId });
     } catch (error) {

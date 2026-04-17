@@ -1,119 +1,133 @@
 const { createClient } = require('@supabase/supabase-js');
 const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit');
 
 module.exports = async (req, res) => {
     const token = process.env.TELEGRAM_BOT_TOKEN;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY;
+    const { SUPABASE_URL, SUPABASE_KEY } = process.env;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    if (req.method !== 'POST') {
-        return res.status(200).send('Lone Star Bot is active');
-    }
+    if (req.method !== 'POST') return res.status(200).send('CRM Active');
 
     const update = req.body;
-    if (!update || !update.message || !update.message.text) {
-        return res.status(200).send('ok');
-    }
-
-    const { text, chat } = update.message;
-    const chatId = chat.id;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const sendMessage = async (messageText) => {
+    const sendMessage = async (cid, text, markup = null) => {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown' })
+            body: JSON.stringify({ chat_id: cid, text, parse_mode: 'Markdown', reply_markup: markup })
         });
     };
 
-    const sendDocument = async (buffer, filename) => {
-        const formData = new FormData();
-        formData.append('chat_id', chatId);
-        formData.append('document', new Blob([buffer]), filename);
-        await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: formData });
-    };
-
     try {
+        // 1. Обработка нажатий на кнопки (Callback Query)
+        if (update.callback_query) {
+            const { data, message } = update.callback_query;
+            const cid = message.chat.id;
+            const [action, id] = data.split('_');
+
+            if (action === 'complete') {
+                await supabase.from('leads').update({ status: 'completed' }).eq('id', id);
+                await sendMessage(cid, `✅ Заявка [${id}] завершена!`);
+            } else if (action === 'price') {
+                await sendMessage(cid, `💰 Чтобы установить цену, напишите:\n\n\`/price ${id} 500\``);
+            } else if (action === 'note') {
+                await sendMessage(cid, `📒 Чтобы добавить заметку, напишите:\n\n\`/note ${id} Ваш комментарий\``);
+            } else if (action === 'info') {
+                const { data: lead } = await supabase.from('leads').select('*').eq('id', id).single();
+                if (lead) {
+                    const info = `📋 *ДЕТАЛИ ЗАЯВКИ [ID: ${id}]*\n\n` +
+                                `👤 Имя: ${lead.name}\n` +
+                                `📞 Телефон: ${lead.phone}\n` +
+                                `📍 Zip: ${lead.zipcode}\n` +
+                                `💰 Цена: $${lead.price || 0}\n` +
+                                `📒 Заметка: ${lead.info || 'нет'}\n` +
+                                `📅 Дата: ${new Date(lead.timestamp).toLocaleString()}`;
+                    await sendMessage(cid, info);
+                }
+            }
+            return res.status(200).send('ok');
+        }
+
+        // 2. Обработка текстовых команд
+        if (!update.message || !update.message.text) return res.status(200).send('ok');
+        
+        const { text, chat } = update.message;
+        const cid = chat.id;
         const args = text.split(' ');
-        const command = args[0].toLowerCase();
+        const cmd = args[0].toLowerCase();
 
-        if (command === '/start' || command === '/help') {
-            const helpText = 
-                "🛠 *Lone Star CRM Dashboard*\n\n" +
-                "📋 *Управление заказами:*\n" +
-                "/list - последние 10 заявок\n" +
-                "/complete [id] - отметить как выполненный\n" +
-                "/price [id] [сумма] - установить цену\n" +
-                "/invoice [id] - создать PDF счет\n\n" +
-                "📊 *Отчетность:*\n" +
-                "/stats - статистика\n" +
-                "/excel - выгрузить базу в Excel\n\n" +
-                "ℹ️ _Пример: /price 1234 500_";
-            await sendMessage(helpText);
-        } 
-        else if (command === '/list') {
-            const { data, error } = await supabase.from('leads').select('id, name, status, price').order('timestamp', { ascending: false }).limit(10);
-            if (error) throw error;
-            let resp = "📋 *Последние заявки:*\n\n";
-            data.forEach(l => { resp += `${l.status === 'pending' ? '⏳' : '✅'} [${l.id}] *${l.name}* ${l.price ? `- $${l.price}` : ''}\n`; });
-            await sendMessage(resp || "📭 Заявок нет.");
-        } 
-        else if (command === '/complete') {
+        if (cmd === '/start' || cmd === '/help') {
+            await sendMessage(cid, 
+                "🚀 *Lone Star CRM ULTIMATE*\n\n" +
+                "🔍 *Поиск:*\n" +
+                "/search [имя/тел] - найти клиента\n\n" +
+                "📊 *Финансы и список:*\n" +
+                "/income - ваша прибыль\n" +
+                "/list - последние 10\n" +
+                "/stats - общая статистика\n\n" +
+                "🛠 *Управление:*\n" +
+                "/note [id] [текст] - добавить заметку\n" +
+                "/price [id] [сумма] - изменить цену\n" +
+                "/complete [id] - закрыть сделку\n\n" +
+                "📁 *Экспорт:*\n" +
+                "/excel - скачать базу"
+            );
+        }
+        else if (cmd === '/income') {
+            const { data } = await supabase.from('leads').select('price, status');
+            const total = data.filter(l => l.status === 'completed').reduce((sum, l) => sum + (l.price || 0), 0);
+            const potential = data.filter(l => l.status === 'pending').reduce((sum, l) => sum + (l.price || 0), 0);
+            await sendMessage(cid, `💵 *ФИНАНСОВЫЙ ОТЧЕТ*\n\n✅ Выручка: *$${total}*\n⏳ Ожидается: *$${potential}*`);
+        }
+        else if (cmd === '/search') {
+            const q = args.slice(1).join(' ');
+            if (!q) return await sendMessage(cid, "Введите имя или номер телефона для поиска.");
+            const { data } = await supabase.from('leads').select('*').or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5);
+            if (data && data.length > 0) {
+                let res = `🔍 *Результаты поиска:* \n\n`;
+                data.forEach(l => { res += `[${l.id}] *${l.name}* (${l.phone})\n`; });
+                await sendMessage(cid, res);
+            } else {
+                await sendMessage(cid, "Ничего не найдено.");
+            }
+        }
+        else if (cmd === '/note') {
             const id = args[1];
-            if (!id) return await sendMessage("❌ Укажите ID: `/complete 1234` ");
-            const { error } = await supabase.from('leads').update({ status: 'completed' }).eq('id', id);
-            if (error) throw error;
-            await sendMessage(`✅ Заявка [${id}] отмечена как выполненная!`);
+            const info = args.slice(2).join(' ');
+            if (!id || !info) return await sendMessage(cid, "Формат: `/note 1234 Клиент просит перезвонить` ");
+            await supabase.from('leads').update({ info }).eq('id', id);
+            await sendMessage(cid, `📒 Заметка к заявке [${id}] сохранена!`);
         }
-        else if (command === '/price') {
-            const id = args[1];
-            const amount = args[2];
-            if (!id || !amount) return await sendMessage("❌ Формат: `/price 1234 500` ");
-            const { error } = await supabase.from('leads').update({ price: parseFloat(amount) }).eq('id', id);
-            if (error) throw error;
-            await sendMessage(`💰 Цена для заявки [${id}] установлена: $${amount}`);
+        else if (cmd === '/list') {
+            const { data } = await supabase.from('leads').select('id, name, status, price').order('timestamp', { ascending: false }).limit(10);
+            let resp = "📋 *Последние сделки:*\n\n";
+            data.forEach(l => { resp += `${l.status === 'completed' ? '✅' : '⏳'} [${l.id}] *${l.name}* - $${l.price || 0}\n`; });
+            await sendMessage(cid, resp);
         }
-        else if (command === '/stats') {
-            const { data, error } = await supabase.from('leads').select('status');
-            if (error) throw error;
-            const s = data.reduce((acc, c) => { acc[c.status] = (acc[c.status] || 0) + 1; return acc; }, {});
-            await sendMessage(`📊 *Статистика:*\n⏳ Ожидают: ${s.pending || 0}\n✅ Готово: ${s.completed || 0}\nВсего: ${data.length}`);
-        }
-        else if (command === '/excel') {
-            const { data, error } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
-            if (error) throw error;
-            const workbook = new ExcelJS.Workbook();
-            const ws = workbook.addWorksheet('Leads');
-            ws.columns = [{header:'ID',key:'id'},{header:'Name',key:'name'},{header:'Phone',key:'phone'},{header:'Status',key:'status'}];
+        else if (cmd === '/excel') {
+            const { data } = await supabase.from('leads').select('*').order('timestamp', { ascending: false });
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('CRM Data');
+            ws.columns = [{header:'ID',key:'id'},{header:'Дата',key:'timestamp'},{header:'Имя',key:'name'},{header:'Телефон',key:'phone'},{header:'Сумма',key:'price'},{header:'Заметка',key:'info'}];
             ws.addRows(data);
-            const buffer = await workbook.xlsx.writeBuffer();
-            await sendDocument(buffer, 'Report.xlsx');
+            const buffer = await wb.xlsx.writeBuffer();
+            const formData = new FormData();
+            formData.append('chat_id', cid);
+            formData.append('document', new Blob([buffer]), 'CRM_Full_Export.xlsx');
+            await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: 'POST', body: formData });
         }
-        else if (command === '/invoice') {
+        else if (cmd === '/price') {
             const id = args[1];
-            if (!id) return await sendMessage("❌ Укажите ID: `/invoice 1234` ");
-            const { data, error } = await supabase.from('leads').select('*').eq('id', id).single();
-            if (error || !data) throw new Error("Заявка не найдена");
-
-            const doc = new PDFDocument();
-            const chunks = [];
-            doc.on('data', c => chunks.push(c));
-            doc.fontSize(25).text('Lone Star Glass Forge', 100, 80);
-            doc.fontSize(15).text(`INVOICE #${data.id}`, 100, 130);
-            doc.text(`Customer: ${data.name}`, 100, 160);
-            doc.text(`Phone: ${data.phone}`, 100, 180);
-            doc.text(`Description: Glass Project`, 100, 210);
-            doc.end();
-            
-            // Ждем завершения генерации PDF
-            const buffer = await new Promise((resolve) => { doc.on('end', () => resolve(Buffer.concat(chunks))); });
-            await sendDocument(buffer, `Invoice_${id}.pdf`);
+            const sprice = args[2];
+            await supabase.from('leads').update({ price: parseFloat(sprice) }).eq('id', id);
+            await sendMessage(cid, `💰 Цена для [${id}] обновлена до $${sprice}`);
         }
-    } catch (error) {
-        console.error('Bot Error:', error);
-        await sendMessage("❌ Ошибка: " + error.message);
+        else if (cmd === '/complete') {
+            const id = args[1];
+            await supabase.from('leads').update({ status: 'completed' }).eq('id', id);
+            await sendMessage(cid, `✅ Сделка [${id}] закрыта!`);
+        }
+    } catch (err) {
+        console.error(err);
     }
     res.status(200).send('ok');
 };
