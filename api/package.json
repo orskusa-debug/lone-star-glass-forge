@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Lone Star Glass Forge Website",
   "dependencies": {
-    "node-telegram-bot-api": "^0.67.0"
+    "node-telegram-bot-api": "^0.67.0",
+    "@supabase/supabase-js": "^2.42.5"
   }
 }

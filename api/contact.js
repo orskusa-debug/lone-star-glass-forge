@@ -19,22 +19,36 @@ module.exports = async (req, res) => {
     const { name, phone, zipcode, message } = req.body;
     const token = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
 
-    if (!token || !chatId) {
-        console.error('Missing Env Vars:', { token: !!token, chatId: !!chatId });
-        return res.status(500).json({ error: 'Конфигурация Telegram не настроена в Vercel (Environment Variables)' });
+    // Инициализируем Supabase если есть ключи
+    let supabase = null;
+    if (supabaseUrl && supabaseKey) {
+        const { createClient } = require('@supabase/supabase-js');
+        supabase = createClient(supabaseUrl, supabaseKey);
     }
 
-    // Инициализируем бота без поллинга (это важно для функций)
+    // Инициализируем бота
     const bot = new TelegramBot(token);
 
     try {
-        const text = `🔥 *НОВАЯ ЗАЯВКА*\n\n👤 *Имя:* ${name}\n📞 *Телефон:* ${phone}\n📍 *Zip:* ${zipcode}\n📝 *Сообщение:* ${message}`;
+        const leadId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        // 1. Сохраняем в базу данных
+        if (supabase) {
+            const { error } = await supabase.from('leads').insert([{
+                id: leadId, name, phone, zipcode, message, status: 'pending'
+            }]);
+            if (error) console.error('Supabase Save Error:', error);
+        }
+
+        // 2. Отправляем в Telegram
+        const text = `🔥 *НОВАЯ ЗАЯВКА [ID: ${leadId}]*\n\n👤 *Имя:* ${name}\n📞 *Телефон:* ${phone}\n📍 *Zip:* ${zipcode}\n📝 *Сообщение:* ${message}`;
         
         await bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
-        console.log('Message sent successfully to:', chatId);
         
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, id: leadId });
     } catch (error) {
         console.error('Telegram API Error:', error.message || error);
         return res.status(500).json({ 
