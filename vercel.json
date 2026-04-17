@@ -6,6 +6,7 @@
   ],
   "routes": [
     { "src": "/api/contact", "dest": "api/contact.js" },
+    { "src": "/api/bot", "dest": "api/bot.js" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
