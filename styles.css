@@ -1,18 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Oswald:wght@700&family=Stalemate&display=swap');
 
 :root {
-    --bg-dark: #ffffff;
+    --bg-light: #ffffff;
     --bg-card: #f9f9fb;
     --border: #eeeeee;
-    --copper: #121212;
-    --copper-glow: rgba(0, 0, 0, 0.05);
-    --amber: #444444;
-    --text-white: #121212;
+    --dark: #121212;
+    --copper: #9d7c5d; /* Elegant copper/bronze tone */
+    --text-dark: #1a1a1b;
     --text-dim: #6b7280;
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --text-white: #ffffff;
     --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 * {
@@ -22,8 +20,8 @@
 }
 
 body {
-    background-color: var(--bg-dark);
-    color: var(--text-white);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
     font-family: 'Montserrat', sans-serif;
     line-height: 1.6;
     overflow-x: hidden;
@@ -66,11 +64,10 @@ h1, h2, h3 {
 }
 
 .hero h1 {
-    font-size: 5rem;
-    line-height: 1.1;
-    margin-bottom: 1rem;
-    color: var(--text-white);
-    text-shadow: 2px 2px 20px rgba(0,0,0,0.8);
+    font-size: 3.5rem;
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+    color: var(--text-dark);
 }
 
 .hero p {
