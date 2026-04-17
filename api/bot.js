@@ -45,18 +45,19 @@ module.exports = async (req, res) => {
                 "📋 *Управление заказами:*\n" +
                 "/list - последние 10 заявок\n" +
                 "/complete [id] - отметить как выполненный\n" +
+                "/price [id] [сумма] - установить цену\n" +
                 "/invoice [id] - создать PDF счет\n\n" +
                 "📊 *Отчетность:*\n" +
                 "/stats - статистика\n" +
                 "/excel - выгрузить базу в Excel\n\n" +
-                "ℹ️ _Напишите /complete 1234, чтобы закрыть заявку_";
+                "ℹ️ _Пример: /price 1234 500_";
             await sendMessage(helpText);
         } 
         else if (command === '/list') {
-            const { data, error } = await supabase.from('leads').select('id, name, status').order('timestamp', { ascending: false }).limit(10);
+            const { data, error } = await supabase.from('leads').select('id, name, status, price').order('timestamp', { ascending: false }).limit(10);
             if (error) throw error;
             let resp = "📋 *Последние заявки:*\n\n";
-            data.forEach(l => { resp += `${l.status === 'pending' ? '⏳' : '✅'} [${l.id}] *${l.name}*\n`; });
+            data.forEach(l => { resp += `${l.status === 'pending' ? '⏳' : '✅'} [${l.id}] *${l.name}* ${l.price ? `- $${l.price}` : ''}\n`; });
             await sendMessage(resp || "📭 Заявок нет.");
         } 
         else if (command === '/complete') {
@@ -65,6 +66,14 @@ module.exports = async (req, res) => {
             const { error } = await supabase.from('leads').update({ status: 'completed' }).eq('id', id);
             if (error) throw error;
             await sendMessage(`✅ Заявка [${id}] отмечена как выполненная!`);
+        }
+        else if (command === '/price') {
+            const id = args[1];
+            const amount = args[2];
+            if (!id || !amount) return await sendMessage("❌ Формат: `/price 1234 500` ");
+            const { error } = await supabase.from('leads').update({ price: parseFloat(amount) }).eq('id', id);
+            if (error) throw error;
+            await sendMessage(`💰 Цена для заявки [${id}] установлена: $${amount}`);
         }
         else if (command === '/stats') {
             const { data, error } = await supabase.from('leads').select('status');
