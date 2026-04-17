@@ -9,47 +9,42 @@ app.use(express.json());
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const masterChatId = process.env.TELEGRAM_CHAT_ID;
 
-// САМАЯ НАДЕЖНАЯ ФУНКЦИЯ ОТПРАВКИ (БЕЗ FETCH)
+// ЖЕСТКАЯ СИНХРОННАЯ ОТПРАВКА (ЖДЕМ ВЕРСЕЛЬ)
 function sendMsg(cid, text, markup = null) {
-    const data = JSON.stringify({
-        chat_id: cid,
-        text: text,
-        parse_mode: 'Markdown',
-        reply_markup: markup
+    return new Promise((resolve, reject) => {
+        const data = JSON.stringify({
+            chat_id: cid,
+            text: text,
+            parse_mode: 'Markdown',
+            reply_markup: markup
+        });
+
+        const options = {
+            hostname: 'api.telegram.org', port: 443,
+            path: `/bot${token}/sendMessage`, method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Content-Length': data.length }
+        };
+
+        const req = https.request(options, (res) => {
+            res.on('data', () => {});
+            res.on('end', () => resolve());
+        });
+        req.on('error', (e) => reject(e));
+        req.write(data);
+        req.end();
     });
-
-    const options = {
-        hostname: 'api.telegram.org',
-        port: 443,
-        path: `/bot${token}/sendMessage`,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': data.length
-        }
-    };
-
-    const req = https.request(options);
-    req.write(data);
-    req.end();
 }
 
-// 1. САЙТ -> ТЕЛЕГРАМ
+// 1. КОНТАКТНАЯ ФОРМА
 app.post('/api/contact', async (req, res) => {
     try {
+        const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
         const { name, phone, zipcode, message } = req.body;
         const id = Math.floor(1000 + Math.random() * 9000).toString();
-        const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
         
         await db.from('leads').insert([{ id, name, phone, zipcode, message }]);
+        await sendMsg(masterChatId, `🔥 *ЗАЯВКА [${id}]*\n👤 ${name}\n📞 ${phone}`);
         
-        const txt = `🔥 *ЗАЯВКА [${id}]*\n👤 ${name}\n📞 ${phone}\n📍 ${zipcode}`;
-        sendMsg(masterChatId, txt, {
-            inline_keyboard: [[
-                { text: '✅ Готово', callback_data: `done_${id}` },
-                { text: '📋 Инфо', callback_data: `info_${id}` }
-            ]]
-        });
         res.status(200).json({ success: true });
     } catch (e) { res.status(500).send(e.message); }
 });
@@ -66,37 +61,28 @@ app.post('/api/bot', async (req, res) => {
             const { data, message } = update.callback_query;
             const cid = message.chat.id;
             const lid = data.split('_')[1];
-
             if (data.startsWith('done_')) {
                 await db.from('leads').update({ status: 'completed' }).eq('id', lid);
-                sendMsg(cid, `✅ Сделка [${lid}] закрыта!`);
-            } else if (data.startsWith('info_')) {
-                const { data: l } = await db.from('leads').select('*').eq('id', lid).single();
-                const info = `📋 *ID: ${lid}*\n👤 ${l.name}\n📞 ${l.phone}\n💰 $${l.price || 0}\n📒 ${l.info || '-'}`;
-                sendMsg(cid, info);
+                await sendMsg(cid, `✅ Сделка [${lid}] зафиналена!`);
             }
             return res.status(200).send('ok');
         }
 
-        // КОМАНДЫ
+        // ТЕКСТ
         if (update.message && update.message.text) {
             const cid = update.message.chat.id;
             const text = update.message.text;
-            const args = text.split(' ');
 
             if (text === '/start' || text === '/help') {
-                sendMsg(cid, "🏛 *Lone Star CRM*\n/list - список\n/income - доходы");
+                await sendMsg(cid, "🏛 *Lone Star CRM (Stable)*\n/list - список\n/income - доходы");
             } else if (text === '/list') {
                 const { data } = await db.from('leads').select('*').order('timestamp', { ascending: false }).limit(10);
                 let r = "📋 *Список:*\n";
                 data.forEach(l => { r += `${l.status==='completed'?'✅':'⏳'} [${l.id}] ${l.name}\n`; });
-                sendMsg(cid, r);
-            } else if (args[0] === '/price') {
-                await db.from('leads').update({ price: parseFloat(args[2]) }).eq('id', args[1]);
-                sendMsg(cid, `💰 Цена [${args[1]}] = $${args[2]}`);
+                await sendMsg(cid, r);
             }
         }
-    } catch (err) { console.error('Bot Critical Error:', err); }
+    } catch (err) { console.error(err); }
     res.status(200).send('ok');
 });
 
