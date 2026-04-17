@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
+const ExcelJS = require('exceljs');
 
 const app = express();
 app.use(express.json());
@@ -77,11 +78,11 @@ app.post('/api/bot', async (req, res) => {
             const cmd = args[0].toLowerCase();
 
             if (cmd === '/start' || cmd === '/help') {
-                await sendMsg(cid, "🏛 *Lone Star CRM ULTIMATE*\n\n/list - список\n/income - финансы\n/stats - статистика\n\n/price [id] [сумма]\n/note [id] [заметка]");
+                await sendMsg(cid, "🏛 *Lone Star CRM*\n\n/list - список\n/income - финансы\n/stats - статистика\n\n/price [id] [сумма]\n/note [id] [заметка]");
             } else if (cmd === '/list') {
                 const { data } = await db.from('leads').select('*').order('timestamp', { ascending: false }).limit(10);
                 let r = "📋 *ПОСЛЕДНИЕ ЗАЯВКИ:*\n\n";
-                data.forEach(l => { r += `${l.status==='completed'?'✅':'⏳'} [${l.id}] ${l.name} - $${l.price || 0}\n`; });
+                if (data) data.forEach(l => { r += `${l.status==='completed'?'✅':'⏳'} [${l.id}] ${l.name} - $${l.price || 0}\n`; });
                 await sendMsg(cid, r);
             } else if (cmd === '/income') {
                 const { data } = await db.from('leads').select('price, status');
@@ -98,6 +99,8 @@ app.post('/api/bot', async (req, res) => {
             } else if (cmd === '/note') {
                 await db.from('leads').update({ info: args.slice(2).join(' ') }).eq('id', args[1]);
                 await sendMsg(cid, `📒 Заметка для [${args[1]}] сохранена.`);
+            } else {
+                await sendMsg(cid, `🔔 Сообщение получено. Для команд используйте /help`);
             }
         }
     } catch (err) { console.error('Bot Error:', err); }
