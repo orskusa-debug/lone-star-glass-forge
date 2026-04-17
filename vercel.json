@@ -1,7 +1,7 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/contact.js", "use": "@vercel/node" },
+    { "src": "api/*.js", "use": "@vercel/node" },
     { "src": "{index.html,styles.css,assets/**,locations/**,areas/**}", "use": "@vercel/static" }
   ],
   "routes": [
