@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Oswald:wght@700&family=Stalemate&display=swap');
+
+:root {
+    --bg-dark: #ffffff;
+    --bg-card: #f9f9fb;
+    --border: #eeeeee;
+    --copper: #121212;
+    --copper-glow: rgba(0, 0, 0, 0.05);
+    --amber: #444444;
+    --text-white: #121212;
+    --text-dim: #6b7280;
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-white);
+    font-family: 'Montserrat', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+h1, h2, h3 {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.accent-font {
+    font-family: 'Stalemate', cursive;
+    text-transform: none;
+    font-size: 2.5rem;
+    color: var(--copper);
+}
+
+/* Layout */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.9), transparent), 
+                url('assets/shower.png') center/cover no-repeat;
+    overflow: hidden;
+}
+
+.hero-content {
+    z-index: 2;
+    max-width: 600px;
+}
+
+.hero h1 {
+    font-size: 5rem;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    color: var(--text-white);
+    text-shadow: 2px 2px 20px rgba(0,0,0,0.8);
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.15rem 2.75rem; /* Increased for 48px+ touch target */
+    min-height: 48px;
+    background: var(--copper);
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    transition: var(--transition-base);
+    border: 1px solid var(--copper);
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: white;
+    color: var(--copper);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Sections */
+section {
+    padding: 100px 0;
+}
+
+.section-title {
+    font-size: 3rem;
+    margin-bottom: 3rem;
+    text-align: center;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: var(--copper);
+    margin: 1rem auto;
+}
+
+/* Gallery */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 400px;
+    background: var(--bg-card);
+    transition: 0.5s var(--transition);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(30%);
+    transition: 0.5s var(--transition);
+}
+
+.gallery-item:hover img {
+    filter: grayscale(0%);
+    transform: scale(1.05);
+}
+
+.gallery-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    opacity: 0;
+    transform: translateY(20px);
+    transition: 0.4s var(--transition);
+}
+
+.gallery-item:hover .gallery-overlay {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Contact Form */
+.contact-section {
+    background: var(--bg-card);
+}
+
+.contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-weight: 700;
+    color: var(--text-dim);
+}
+
+input, textarea, select {
+    padding: 1rem;
+    background: #252525;
+    border: 1px solid #333;
+    color: white;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: 0.3s;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--copper);
+    box-shadow: 0 0 10px var(--copper-glow);
+}
+
+/* SEO City Pages Specific */
+.city-hero {
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/assets/forge-wider.png') center/cover;
+}
+
+.city-hero h1 {
+    font-size: 4rem;
+    margin: 0 auto;
+}
+
+/* Footer */
+footer {
+    padding: 50px 0;
+    text-align: center;
+    border-top: 1px solid #eee;
+    color: var(--text-dim);
+    background: #fdfdfd;
+}
+
+@media (max-width: 768px) {
+    .contact-wrapper {
+        grid-template-columns: 1fr;
+    }
+    .hero h1 {
+        font-size: 3rem;
+    }
+}

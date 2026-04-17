@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cedar Park Frameless Shower Doors | Custom Glass Enclosures TX</title>
+    <meta name="description" content="Searching for frameless shower doors in Cedar Park, TX? Lone Star Glass Forge offers expert installation and premium glass work. Schedule your free quote today!">
+    <link rel="stylesheet" href="../styles.css">
+    <style> .location-hero { background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('../assets/shower.png') center/cover; padding: 100px 0; } </style>
+</head>
+<body>
+    <header style="padding: 2rem;">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="logo-text" style="font-family: 'Oswald'; font-size: 1.5rem; letter-spacing: 3px; color: var(--text-white);">LONE STAR GLASS FORGE</div>
+            <nav style="display: flex; gap: 2rem;"><a href="/">Home</a><a href="/#contact">Estimate</a></nav>
+        </div>
+    </header>
+    <section class="location-hero"><div class="container">
+        <h1>Premium Frameless Shower Doors in Cedar Park</h1>
+        <p>Cedar Park residents demand high-quality craftsmanship. Lone Star Glass Forge is proud to be the premier local contractor for frameless shower door installation in Cedar Park. We combine heavy-duty safety glass with modern minimalist design to transform your master suite into a private sanctuary.</p>
+        <a href="#contact" class="btn">Get Cedar Park Quote</a>
+    </div></section>
+    <section style="background: var(--bg-card); padding: 80px 0;"><div class="container"><h2 class="section-title">Cedar Park Glass Services</h2><div class="gallery-grid">
+        <div class="service-card"><h3>Glass Railings</h3><p>Perfect for balconies and stairs in the Cedar Park and Brushy Creek areas.</p></div>
+        <div class="service-card"><h3>Frameless Enclosures</h3><p>Designed for the modern Cedar Park aesthetic—clean, clear, and durable.</p></div>
+        <div class="service-card"><h3>Professional Seals</h3><p>Water-tight finishes that stand the test of time and Texas humidity.</p></div>
+    </div></div></section>
+    <section style="padding: 80px 0;"><div class="container"><h2 class="section-title">Why Cedar Park Chooses Us</h2><p>We are part of the Cedar Park community. We’ve built our reputation on word-of-mouth in the area, providing glass railings and shower enclosures that stand the test of time. Our expert crew is licensed and focused on 5-star service for every Cedar Park family.</p></div></section>
+    <section id="contact" style="background: var(--bg-dark); padding: 80px 0;"><div class="container">
+        <h2 class="section-title">Free Cedar Park Estimate</h2>
+        <form id="contactForm">
+            <input type="hidden" name="location" value="Cedar Park">
+            <div class="form-group"><label>Name</label><input type="text" id="name" required></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="phone" required></div>
+            <div class="form-group"><label>Zip</label><input type="text" id="zipcode" required pattern="[0-9]{5}"></div>
+            <div class="form-group"><label>Project</label><textarea id="message" required></textarea></div>
+            <button type="submit" class="btn">Send Request</button>
+        </form>
+        <div id="formStatus" style="margin-top: 1rem; display: none;"></div>
+    </div></section>
+    <footer style="padding: 40px 0; text-align: center;"><p>&copy; 2024 Lone Star Glass Forge. Serving Cedar Park, TX.</p></footer>
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                zipcode: document.getElementById('zipcode').value,
+                message: `[Cedar Park] ` + document.getElementById('message').value
+            };
+            const status = document.getElementById('formStatus');
+            status.style.display = 'block'; status.textContent = '⏱ Processing...';
+            try {
+                const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+                const data = await res.json();
+                if (data.success) { status.innerHTML = '<span>Sent!</span>'; e.target.reset(); }
+            } catch (err) { status.textContent = '❌ Failed.'; }
+        });
+    </script>
+</body>
+</html>

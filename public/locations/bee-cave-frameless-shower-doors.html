@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>Bee Cave Frameless Shower Doors | Custom Hill Country Glass</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <header style="padding:2rem;"><div class="container" style="display:flex; justify-content:space-between;"><div class="logo-text" style="font-family:'Oswald';">LONE STAR GLASS FORGE</div><nav><a href="/">Home</a></nav></div></header>
+    <section style="background:linear-gradient(rgba(255,255,255,0.9),rgba(255,255,255,0.9)),url('../assets/shower.png') center/cover; padding:100px 0;">
+        <div class="container">
+            <h1>Artisanal Frameless Shower Doors in Bee Cave</h1>
+            <p>Combining the rustic charm of the Texas Hill Country with modern industrial design, our Bee Cave projects are second to none. Whether you're in Spanish Oaks or near the Hill Country Galleria, Lone Star Glass Forge delivers bespoke frameless shower enclosures that enhance your bathroom's natural light and visual space.</p>
+            <a href="#contact" class="btn">Get Bee Cave Quote</a>
+        </div>
+    </section>
+    <section id="contact" style="background:var(--bg-dark); padding:80px 0;"><div class="container">
+        <h2>Free Bee Cave Estimate</h2>
+        <form id="contactForm">
+            <input type="hidden" name="location" value="Bee Cave">
+            <div class="form-group"><label>Name</label><input id="name" required></div>
+            <div class="form-group"><label>Phone</label><input id="phone" required></div>
+            <div class="form-group"><label>Zip</label><input id="zipcode" value="78738" required></div>
+            <button type="submit" class="btn">Get Free Quote</button>
+        </form>
+    </div></section>
+    <footer style="text-align:center; padding:40px;"><p>&copy; 2024 Lone Star Glass Forge. Serving Bee Cave, TX.</p></footer>
+    <script> document.getElementById('contactForm').addEventListener('submit', async (e) => { e.preventDefault(); const formData = { name: document.getElementById('name').value, phone: document.getElementById('phone').value, zipcode: document.getElementById('zipcode').value, message: `[Bee Cave] SEO Page Lead` }; try { await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }); alert('Thank you! Your Bee Cave estimate request has been sent.'); e.target.reset(); } catch (err) {} }); </script>
+</body>
+</html>

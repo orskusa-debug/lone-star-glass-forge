@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Frameless Shower Doors Georgetown, TX | Glass Installation</title>
+    <meta name="description" content="The #1 source for frameless shower doors in Georgetown, TX. Custom designs, heavy glass, and expert local installation. Get your historical or modern home quote now!">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <header style="padding: 2rem;"><div class="container" style="display: flex; justify-content: space-between;"><div class="logo-text" style="font-family:'Oswald'; color:var(--text-white);">LONE STAR GLASS FORGE</div><nav><a href="/">Home</a></nav></div></header>
+    <section style="background:linear-gradient(rgba(255,255,255,0.9),rgba(255,255,255,0.9)),url('../assets/shower.png') center/cover; padding:100px 0;">
+        <div class="container">
+            <h1>Artisanal Frameless Shower Doors for Georgetown Homeowners</h1>
+            <p>Georgetown is a city where historic charm meets modern luxury. Whether you are updating a classic ranch near the Historic Square or building a brand-new custom home in Sun City, Lone Star Glass Forge provides the bespoke glass work you need. We specialize in frameless shower doors Georgetown TX residents love for their clean lines and durability.</p>
+            <a href="#contact" class="btn">Get Georgetown Quote</a>
+        </div>
+    </section>
+    <section id="contact" style="background:var(--bg-dark); padding:80px 0;"><div class="container">
+        <h2>Free Georgetown Estimate</h2>
+        <form id="contactForm">
+            <input type="hidden" name="location" value="Georgetown">
+            <div class="form-group"><label>Name</label><input id="name" required></div>
+            <div class="form-group"><label>Phone</label><input id="phone" required></div>
+            <div class="form-group"><label>Zip</label><input id="zipcode" required pattern="[0-9]{5}"></div>
+            <button type="submit" class="btn">Send Request</button>
+        </form>
+        <div id="formStatus" style="display:none;"></div>
+    </div></section>
+    <footer style="text-align:center; padding:40px;"><p>&copy; 2024 Lone Star Glass Forge. Serving Georgetown, TX.</p></footer>
+    <script> document.getElementById('contactForm').addEventListener('submit', async (e) => { e.preventDefault(); const formData = { name: document.getElementById('name').value, phone: document.getElementById('phone').value, zipcode: document.getElementById('zipcode').value, message: `[Georgetown] Contact from SEO Page` }; try { const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }); const data = await res.json(); if (data.success) { alert('Sent!'); e.target.reset(); } } catch (err) {} }); </script>
+</body>
+</html>
