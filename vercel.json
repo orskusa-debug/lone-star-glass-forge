@@ -1,12 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
-    { "src": "{index.html,styles.css,assets/**,locations/**,areas/**}", "use": "@vercel/static" }
-  ],
+  "cleanUrls": true,
   "routes": [
-    { "src": "/api/contact", "dest": "api/contact.js" },
-    { "src": "/api/bot", "dest": "api/bot.js" },
+    { "src": "/api/contact", "dest": "/api/contact.js" },
+    { "src": "/api/bot", "dest": "/api/bot.js" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
